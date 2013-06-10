@@ -17,13 +17,19 @@ module RecordCache
 
       # The logger instance (Rails.logger if present)
       def logger
-        @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
+        if debug_output
+          @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
+        end
       end
 
       # Set the ActiveSupport::Cache::Store instance that contains the current record(group) versions.
       # Note that it must point to a single Store shared by all webservers (defaults to Rails.cache)
       def version_store=(store)
         @version_store = RecordCache::VersionStore.new(RecordCache::MultiRead.test(store))
+      end
+
+      def debug_output=(show_debug_output)
+        @show_debug_output = show_debug_output
       end
 
       # The ActiveSupport::Cache::Store instance that contains the current record(group) versions.
