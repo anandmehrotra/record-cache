@@ -36,7 +36,7 @@ module RecordCache
         # get the records from the cache if there is a current version
         records = current_version ? from_cache(key, current_version) : nil
         # logging (only in debug mode!) and statistics
-        log_full_table_cache_hit(key, records) if RecordCache::Base.debug_output && RecordCache::Base.logger.debug?
+        log_full_table_cache_hit(key, records)
         statistics.add(1, records ? 1 : 0) if statistics.active?
         # no records found?
         unless records

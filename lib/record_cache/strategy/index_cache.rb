@@ -63,7 +63,7 @@ module RecordCache
         # retrieve the ids from the local cache based on the current version from the version store
         ids = current_version ? fetch_ids_from_cache(versioned_key) : nil
         # logging (only in debug mode!) and statistics
-        log_cache_hit(versioned_key, ids) if RecordCache::Base.debug_output && RecordCache::Base.logger.debug?
+        log_cache_hit(versioned_key, ids)
         statistics.add(1, ids ? 1 : 0) if statistics.active?
         # retrieve the ids from the DB if the result was not fresh
         ids = fetch_ids_from_db(versioned_key, value) unless ids

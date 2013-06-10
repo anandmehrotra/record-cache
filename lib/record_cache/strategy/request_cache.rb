@@ -36,7 +36,7 @@ module RecordCache
         klass_store = (@@request_store[@base.name] ||= {})
         key = query.cache_key
         # logging (only in debug mode!) and statistics
-        log_cache_hit(key, klass_store.key?(key)) if RecordCache::Base.debug_output && RecordCache::Base.logger.debug?
+        log_cache_hit(key, klass_store.key?(key))
         statistics.add(1, klass_store.key?(key) ? 1 : 0) if statistics.active?
         klass_store[key] ||= yield
       end

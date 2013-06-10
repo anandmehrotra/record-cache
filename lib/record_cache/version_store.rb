@@ -29,7 +29,7 @@ module RecordCache
     def renew(key)
       new_version = (Time.current.to_f * 10000).to_i
       @store.write(key, new_version, :raw => true)
-      RecordCache::Base.logger.debug{ "Version Store: renew #{key}: nil => #{new_version}" } if RecordCache::Base.debug_output 
+      RecordCache::Base.logger.debug{ "Version Store: renew #{key}: nil => #{new_version}" }
       new_version
     end
 
@@ -42,9 +42,9 @@ module RecordCache
         version = renew(key)
       elsif version == new_version
         # only log statement in case the :initial option was supported by the cache store
-        RecordCache::Base.logger.debug{ "Version Store: renew #{key}: nil => #{new_version}" } if RecordCache::Base.debug_output 
+        RecordCache::Base.logger.debug{ "Version Store: renew #{key}: nil => #{new_version}" }
       else
-        RecordCache::Base.logger.debug{ "Version Store: incremented #{key}: #{version - 1} => #{version}" } if RecordCache::Base.debug_output 
+        RecordCache::Base.logger.debug{ "Version Store: incremented #{key}: #{version - 1} => #{version}" }
       end
       version
     end
