@@ -17,7 +17,7 @@ module RecordCache
 
       # The logger instance (Rails.logger if present)
       def logger
-        if debug_output
+        if @debug_output
           @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
         end
       end
