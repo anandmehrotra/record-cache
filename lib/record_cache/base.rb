@@ -26,8 +26,9 @@ module RecordCache
       def logger
         if !debug_output && Rails.env == "development"
           @logger = RecordCache::FAKELOGGER
-        else
+        elsif
           @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
+        end
       end
 
 
