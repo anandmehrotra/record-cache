@@ -6,6 +6,13 @@ module RecordCache
   # Completely disable the cache (may lead to stale results in case caching for other workers is not DISABLED)
   DISABLED = 3
 
+  class FakeLogger
+    def debug(progname = nil, &block)
+    end
+  end
+
+  FAKELOGGER = FakeLogger.new 
+
   module Base
     class << self
       def included(klass)
@@ -15,20 +22,12 @@ module RecordCache
         end
       end
 
-      class FakeLogger
-        def debug(msg)
-        end
-      end
-
-      fake_logger = FakeLogger.new 
-
-      # The logger instance (Rails.logger if present)
+      # The logger instance (Rails.logger if present, or none if debu_output is off)
       def logger
-        if debug_output
+        if !debug_output
+          @logger = RecordCache::FAKELOGGER
+        else
           @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
-        end
-
-        @logger = fake_logger
       end
 
 
