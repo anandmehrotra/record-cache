@@ -33,8 +33,10 @@ module RecordCache
           arel = sql.instance_variable_get(:@arel)
           query = arel ? RecordCache::Arel::QueryVisitor.new.accept(arel.ast) : nil
           cacheable = query && record_cache.cacheable?(query)
-          # log only in debug mode!
-          RecordCache::Base.logger.debug{ "#{cacheable ? 'Fetch from cache' : 'Not cacheable'} (#{query}): SQL = #{sql}" }
+
+          # log only in debug mode and with debugging output option turned on.
+          RecordCache::Base.logger.debug{ "#{cacheable ? 'Fetch from cache' : 'Not cacheable'} (#{query}): SQL = #{sql}" } if RecordCache::Base.debug_output 
+         
           # retrieve the records from cache if the query is cacheable otherwise go straight to the DB
           cacheable ? record_cache.fetch(query) : find_by_sql_without_record_cache(*args)
         end

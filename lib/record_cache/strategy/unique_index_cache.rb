@@ -71,7 +71,7 @@ module RecordCache
         # query the records with missing ids
         id_to_key_map.except!(*records.map(&@attribute))
         # logging (only in debug mode!) and statistics
-        log_id_cache_hit(ids, id_to_key_map.keys) if RecordCache::Base.logger.debug?
+        log_id_cache_hit(ids, id_to_key_map.keys) if RecordCache::Base.debug_output && RecordCache::Base.logger.debug?
         statistics.add(ids.size, records.size) if statistics.active?
         # retrieve records from DB in case there are some missing ids
         records += from_db(id_to_key_map, id_to_version_key_map) if id_to_key_map.size > 0
