@@ -22,9 +22,9 @@ module RecordCache
         end
       end
 
-      # The logger instance (Rails.logger if present). Allow dev mode log supression
+      # The logger instance (Rails.logger if present).
       def logger        
-        if !debug_output && Rails.env == "development"
+        if !debug_output
           @logger = RecordCache::FAKELOGGER
         else
           @logger ||= defined?(::Rails) ? ::Rails.logger : ::ActiveRecord::Base.logger
