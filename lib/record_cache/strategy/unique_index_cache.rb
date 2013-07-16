@@ -71,7 +71,6 @@ module RecordCache
           id_to_version_key_map[id] = versioned_key(key, current_versions[id]) if current_versions[id] 
         end
 
-        id_to_version_key_map = Hash[hashdata]
         # retrieve the records from the cache
         records = id_to_version_key_map.size > 0 ? from_cache(id_to_version_key_map) : []
         # query the records with missing ids
