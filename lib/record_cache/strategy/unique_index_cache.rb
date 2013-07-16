@@ -65,7 +65,13 @@ module RecordCache
         # retrieve the current version of the records
         current_versions = version_store.current_multi(id_to_key_map)
         # get the keys for the records for which a current version was found
-        id_to_version_key_map = Hash[id_to_key_map.map{ |id, key| current_versions[id] ? [id, versioned_key(key, current_versions[id])] : nil }]
+
+        hashdata = id_to_key_map.map do |id, key| 
+          next unless current_versions[id] 
+          [id, versioned_key(key, current_versions[id])]
+        end
+
+        id_to_version_key_map = Hash[hashdata]
         # retrieve the records from the cache
         records = id_to_version_key_map.size > 0 ? from_cache(id_to_version_key_map) : []
         # query the records with missing ids
