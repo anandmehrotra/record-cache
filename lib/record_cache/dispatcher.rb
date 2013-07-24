@@ -26,9 +26,9 @@ module RecordCache
       store = record_store(options.delete(:store))
       # dispatch the parse call to all known strategies
       Dispatcher.strategy_classes.map{ |klass| klass.parse(@base, store, options) }.flatten.compact.each do |strategy|
-        raise "Multiple record cache definitions found for '#{strategy.attribute}' on #{@base.name}" if @strategy_by_attribute[strategy.attribute]
+        # console.warn "Multiple record cache definitions found for '#{strategy.attribute}' on #{@base.name}" if @strategy_by_attribute[strategy.attribute]
         # and keep track of all strategies
-        @strategy_by_attribute[strategy.attribute] = strategy
+        @strategy_by_attribute[strategy.attribute] = strategy unless @strategy_by_attribute[strategy.attribute]
       end
       # make sure the strategies are ordered again on next call to +ordered_strategies+
       @ordered_strategies = nil
