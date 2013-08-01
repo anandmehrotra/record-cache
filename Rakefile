@@ -9,11 +9,6 @@ require 'rdoc/task'
 
 RSpec::Core::RakeTask.new
 
-RSpec::Core::RakeTask.new(:rcov) do |spec|
-  spec.rcov = true
-  spec.rcov_opts = ['--exclude', 'spec', '--exclude', '.rvm']
-end
-
 desc 'Run the specs.'
 task :default => :rcov
 
