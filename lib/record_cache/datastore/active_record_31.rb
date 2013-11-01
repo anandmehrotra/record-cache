@@ -133,7 +133,7 @@ module RecordCache
         visit o.expressions if @cacheable
       end
 
-      def visit_Arel_Nodes_Limit o
+      def visit_Arel_Nodes_Limit o, a
         @query.limit = o.expr
       end
       alias :visit_Arel_Nodes_Top :visit_Arel_Nodes_Limit
@@ -151,14 +151,14 @@ module RecordCache
         end
       end
 
-      def visit_Arel_Nodes_SelectCore o
+      def visit_Arel_Nodes_SelectCore o, a
         @cacheable = false unless o.groups.empty?
         visit o.froms  if @cacheable
         visit o.wheres if @cacheable
         # skip o.projections
       end
 
-      def visit_Arel_Nodes_SelectStatement o
+      def visit_Arel_Nodes_SelectStatement o, attribute
         @cacheable = false if o.cores.size > 1
         if @cacheable
           visit o.offset
@@ -180,15 +180,15 @@ module RecordCache
         end
       end
 
-      def visit_Arel_Table o
+      def visit_Arel_Table o, a
         @table_name = o.name
       end
 
-      def visit_Arel_Nodes_Ordering o
-        [visit(o.expr), o.descending]
+      def visit_Arel_Nodes_Ordering o, a
+        [visit(o.expr), o.direction]
       end
 
-      def visit_Arel_Attributes_Attribute o
+      def visit_Arel_Attributes_Attribute o, a
         o.name.to_sym
       end
       alias :visit_Arel_Attributes_Integer   :visit_Arel_Attributes_Attribute
@@ -197,7 +197,7 @@ module RecordCache
       alias :visit_Arel_Attributes_Time      :visit_Arel_Attributes_Attribute
       alias :visit_Arel_Attributes_Boolean   :visit_Arel_Attributes_Attribute
 
-      def visit_Arel_Nodes_Equality o
+      def visit_Arel_Nodes_Equality o, a
         key, value = visit(o.left), visit(o.right)
         # several different binding markers exist depending on the db driver used (MySQL, Postgress supported)
         if value.to_s =~ /^(\?|\u0000|\$\d+)$/
@@ -209,7 +209,7 @@ module RecordCache
       end
       alias :visit_Arel_Nodes_In                 :visit_Arel_Nodes_Equality
 
-      def visit_Arel_Nodes_And o
+      def visit_Arel_Nodes_And o, a
         visit(o.left)
         visit(o.right)
       end
@@ -235,7 +235,7 @@ module RecordCache
         o.to_sym
       end
 
-      def visit_Object o
+      def visit_Object o, a
         o
       end
       alias :visit_Arel_Nodes_SqlLiteral :visit_Object
@@ -252,7 +252,7 @@ module RecordCache
       alias :visit_DateTime :visit_Object
       alias :visit_Hash :visit_Object
 
-      def visit_Array o
+      def visit_Array o, a
         o.map{ |x| visit x }
       end
     end
