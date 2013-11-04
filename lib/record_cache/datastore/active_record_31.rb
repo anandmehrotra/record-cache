@@ -138,7 +138,7 @@ module RecordCache
       end
       alias :visit_Arel_Nodes_Top :visit_Arel_Nodes_Limit
 
-      def visit_Arel_Nodes_Grouping o
+      def visit_Arel_Nodes_Grouping o, a
         return unless @cacheable
         # `calendars`.account_id = 5
         if @table_name && o.expr =~ /^`#{@table_name}`\.`?(\w*)`?\s*=\s*(\d+)$/
