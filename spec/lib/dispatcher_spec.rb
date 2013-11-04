@@ -15,11 +15,12 @@ describe RecordCache::Dispatcher do
     RecordCache::Dispatcher.strategy_classes.delete(Integer)
   end
 
-  context "parse" do
-    it "should raise an error when the same index is added twice" do
-      lambda { Apple.cache_records(:index => :store_id) }.should raise_error("Multiple record cache definitions found for 'store_id' on Apple")
-    end
-  end
+  # dispatcher now just ignores multiple definitions if one is already defined.
+  # context "parse" do
+  #   it "should raise an error when the same index is added twice" do
+  #     lambda { Apple.cache_records(:index => :store_id) }.should raise_error("Multiple record cache definitions found for 'store_id' on Apple")
+  #   end
+  # end
   
   it "should return the Cache for the requested strategy" do
     @apple_dispatcher[:id].class.should == RecordCache::Strategy::UniqueIndexCache
