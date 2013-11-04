@@ -34,7 +34,7 @@ module RecordCache
 
           query = arel ? RecordCache::Arel::QueryVisitor.new(args[1]).accept(arel.ast) : nil
           cacheable = query && record_cache.cacheable?(query)
-          # log only in debug mode!
+          # log only in debug mode! and debugging option on
           RecordCache::Base.logger.debug{ "#{cacheable ? 'Fetch from cache' : 'Not cacheable'} (#{query}): SQL = #{arel.to_sql}" }
           # retrieve the records from cache if the query is cacheable otherwise go straight to the DB
           cacheable ? record_cache.fetch(query) : find_by_sql_without_record_cache(*args)
@@ -125,20 +125,20 @@ module RecordCache
       alias :visit_Arel_Nodes_On                :unary
       alias :visit_Arel_Nodes_UnqualifiedColumn :unary
 
-      def visit_Arel_Nodes_Offset o
+      def visit_Arel_Nodes_Offset o, a
         @cacheable = false unless o.expr == 0
       end
 
-      def visit_Arel_Nodes_Values o
+      def visit_Arel_Nodes_Values o, a
         visit o.expressions if @cacheable
       end
 
-      def visit_Arel_Nodes_Limit o
+      def visit_Arel_Nodes_Limit o, a
         @query.limit = o.expr
       end
       alias :visit_Arel_Nodes_Top :visit_Arel_Nodes_Limit
 
-      def visit_Arel_Nodes_Grouping o
+      def visit_Arel_Nodes_Grouping o, a
         return unless @cacheable
         # `calendars`.account_id = 5
         if @table_name && o.expr =~ /^`#{@table_name}`\.`?(\w*)`?\s*=\s*(\d+)$/
@@ -151,14 +151,14 @@ module RecordCache
         end
       end
 
-      def visit_Arel_Nodes_SelectCore o
+      def visit_Arel_Nodes_SelectCore o, a
         @cacheable = false unless o.groups.empty?
         visit o.froms  if @cacheable
         visit o.wheres if @cacheable
         # skip o.projections
       end
 
-      def visit_Arel_Nodes_SelectStatement o
+      def visit_Arel_Nodes_SelectStatement o, a
         @cacheable = false if o.cores.size > 1
         if @cacheable
           visit o.offset
@@ -180,15 +180,15 @@ module RecordCache
         end
       end
 
-      def visit_Arel_Table o
+      def visit_Arel_Table o, a
         @table_name = o.name
       end
 
-      def visit_Arel_Nodes_Ordering o
-        [visit(o.expr), o.descending]
+      def visit_Arel_Nodes_Ordering o, a
+        [visit(o.expr), o.direction]
       end
 
-      def visit_Arel_Attributes_Attribute o
+      def visit_Arel_Attributes_Attribute o, a
         o.name.to_sym
       end
       alias :visit_Arel_Attributes_Integer   :visit_Arel_Attributes_Attribute
@@ -197,7 +197,7 @@ module RecordCache
       alias :visit_Arel_Attributes_Time      :visit_Arel_Attributes_Attribute
       alias :visit_Arel_Attributes_Boolean   :visit_Arel_Attributes_Attribute
 
-      def visit_Arel_Nodes_Equality o
+      def visit_Arel_Nodes_Equality o, a
         key, value = visit(o.left), visit(o.right)
         # several different binding markers exist depending on the db driver used (MySQL, Postgress supported)
         if value.to_s =~ /^(\?|\u0000|\$\d+)$/
@@ -209,7 +209,7 @@ module RecordCache
       end
       alias :visit_Arel_Nodes_In                 :visit_Arel_Nodes_Equality
 
-      def visit_Arel_Nodes_And o
+      def visit_Arel_Nodes_And o, a
         visit(o.left)
         visit(o.right)
       end
@@ -226,16 +226,16 @@ module RecordCache
       alias :visit_Arel_Nodes_DoesNotMatch       :not_cacheable
       alias :visit_Arel_Nodes_Matches            :not_cacheable
 
-      def visit_Fixnum o
+      def visit_Fixnum o, a
         o.to_i
       end
       alias :visit_Bignum :visit_Fixnum
 
-      def visit_Symbol o
+      def visit_Symbol o, a
         o.to_sym
       end
 
-      def visit_Object o
+      def visit_Object o, a
         o
       end
       alias :visit_Arel_Nodes_SqlLiteral :visit_Object
@@ -252,7 +252,7 @@ module RecordCache
       alias :visit_DateTime :visit_Object
       alias :visit_Hash :visit_Object
 
-      def visit_Array o
+      def visit_Array o, a
         o.map{ |x| visit x }
       end
     end
