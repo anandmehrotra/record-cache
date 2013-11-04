@@ -24,38 +24,38 @@ describe RecordCache::Strategy::Util do
 
   context "filter" do
     it "should apply filter" do
-      apples = Apple.where(:id => [1,2]).all
+      apples = Apple.where(:id => [1,2]).load
       subject.filter!(apples, :name => "Adams Apple 1")
       apples.should == [Apple.find_by_name("Adams Apple 1")]
     end
 
     it "should return empty array when filter does not match any record" do
-      apples = Apple.where(:id => [1,2]).all
+      apples = Apple.where(:id => [1,2]).load
       subject.filter!(apples, :name => "Adams Apple Pie")
       apples.should be_empty
     end
 
     it "should filter on text" do
-      apples = Apple.where(:id => [1,2]).all
+      apples = Apple.where(:id => [1,2]).load
       subject.filter!(apples, :name => "Adams Apple 1")
       apples.should == [Apple.find_by_name("Adams Apple 1")]
     end
 
     it "should filter on integers" do
-      apples = Apple.where(:id => [1,2,8,9]).all
+      apples = Apple.where(:id => [1,2,8,9]).load
       subject.filter!(apples, :store_id => 2)
       apples.map(&:id).sort.should == [8,9]
     end
 
     it "should filter on dates" do
-      people = Person.where(:id => [1,2,3]).all
+      people = Person.where(:id => [1,2,3]).load
       subject.filter!(people, :birthday => Date.civil(1953,11,11))
       people.size.should == 1
       people.first.name.should == "Blue"
     end
 
     it "should filter on floats" do
-      people = Person.where(:id => [1,2,3]).all
+      people = Person.where(:id => [1,2,3]).load
       subject.filter!(people, :height => 1.75)
       people.size.should == 2
       people.map(&:name).sort.should == ["Blue", "Cris"]
@@ -73,7 +73,7 @@ describe RecordCache::Strategy::Util do
       apple.name = Apple.find(9).name
       apple.save!
 
-      apples = Apple.where(:id => [1,2,3,8,9,10]).all
+      apples = Apple.where(:id => [1,2,3,8,9,10]).load
       subject.filter!(apples, :store_id => [2, 4], :name => apple.name)
       apples.size.should == 2
       apples.map(&:name).should == [apple.name, apple.name]
@@ -84,128 +84,128 @@ describe RecordCache::Strategy::Util do
 
   context "sort" do
     it "should accept a Symbol as a sort order" do
-      people = Person.where(:id => [1,2,3]).all
+      people = Person.where(:id => [1,2,3]).load
       subject.sort!(people, :name)
       people.map(&:name).should == ["Adam", "Blue", "Cris"]
     end
 
    it "should accept a single Array as a sort order" do
-      people = Person.where(:id => [1,2,3]).all
+      people = Person.where(:id => [1,2,3]).load
       subject.sort!(people, [:name, false])
       people.map(&:name).should == ["Cris", "Blue", "Adam"]
     end
 
     it "should accept multiple Symbols as a sort order" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, :height, :id)
       people.map(&:height).should == [1.69, 1.75, 1.75, 1.91]
       people.map(&:id).should == [4, 2, 3, 5]
     end
 
     it "should accept a mix of Symbols and Arrays as a sort order" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, false], :id)
       people.map(&:height).should == [1.91, 1.75, 1.75, 1.69]
       people.map(&:id).should == [5, 2, 3, 4]
     end
 
     it "should accept multiple Arrays as a sort order" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, false], [:id, false])
       people.map(&:height).should == [1.91, 1.75, 1.75, 1.69]
       people.map(&:id).should == [5, 3, 2, 4]
     end
 
     it "should accept an Array with Arrays as a sort order (default used by record cache)" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [[:height, false], [:id, false]])
       people.map(&:height).should == [1.91, 1.75, 1.75, 1.69]
       people.map(&:id).should == [5, 3, 2, 4]
     end
 
     it "should order nil first for ASC" do
-      apples = Apple.where(:store_id => 1).all
+      apples = Apple.where(:store_id => 1).load
       subject.sort!(apples, [:person_id, true])
       apples.map(&:person_id).should == [nil, nil, 4, 4, 5]
     end
 
     it "should order nil last for DESC" do
-      apples = Apple.where(:store_id => 1).all
+      apples = Apple.where(:store_id => 1).load
       subject.sort!(apples, [:person_id, false])
       apples.map(&:person_id).should == [5, 4, 4, nil, nil]
     end
 
     it "should order ascending on text" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:name, true])
       people.map(&:name).should == ["Adam", "Blue", "Cris", "Fry"]
     end
 
     it "should order descending on text" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:name, false])
       people.map(&:name).should == ["Fry", "Cris", "Blue", "Adam"]
     end
 
     it "should order ascending on integers" do
-      people = Person.where(:id => [4,2,1,3]).all
+      people = Person.where(:id => [4,2,1,3]).load
       subject.sort!(people, [:id, true])
       people.map(&:id).should == [1,2,3,4]
     end
 
     it "should order descending on integers" do
-      people = Person.where(:id => [4,2,1,3]).all
+      people = Person.where(:id => [4,2,1,3]).load
       subject.sort!(people, [:id, false])
       people.map(&:id).should == [4,3,2,1]
     end
 
     it "should order ascending on dates" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:birthday, true])
       people.map(&:birthday).should == [Date.civil(1953,11,11), Date.civil(1975,03,20), Date.civil(1975,03,20), Date.civil(1985,01,20)]
     end
 
     it "should order descending on dates" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:birthday, false])
       people.map(&:birthday).should == [Date.civil(1985,01,20), Date.civil(1975,03,20), Date.civil(1975,03,20), Date.civil(1953,11,11)]
     end
 
     it "should order ascending on float" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:height, true])
       people.map(&:height).should == [1.69, 1.75, 1.75, 1.83]
     end
 
     it "should order descending on float" do
-      people = Person.where(:id => [1,2,3,4]).all
+      people = Person.where(:id => [1,2,3,4]).load
       subject.sort!(people, [:height, false])
       people.map(&:height).should == [1.83, 1.75, 1.75, 1.69]
     end
 
     it "should order on multiple fields (ASC + ASC)" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, true], [:id, true])
       people.map(&:height).should == [1.69, 1.75, 1.75, 1.91]
       people.map(&:id).should == [4, 2, 3, 5]
     end
 
     it "should order on multiple fields (ASC + DESC)" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, true], [:id, false])
       people.map(&:height).should == [1.69, 1.75, 1.75, 1.91]
       people.map(&:id).should == [4, 3, 2, 5]
     end
 
     it "should order on multiple fields (DESC + ASC)" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, false], [:id, true])
       people.map(&:height).should == [1.91, 1.75, 1.75, 1.69]
       people.map(&:id).should == [5, 2, 3, 4]
     end
 
     it "should order on multiple fields (DESC + DESC)" do
-      people = Person.where(:id => [2,3,4,5]).all
+      people = Person.where(:id => [2,3,4,5]).load
       subject.sort!(people, [:height, false], [:id, false])
       people.map(&:height).should == [1.91, 1.75, 1.75, 1.69]
       people.map(&:id).should == [5, 3, 2, 4]
@@ -227,7 +227,7 @@ describe RecordCache::Strategy::Util do
       ids << Person.create!(:name => "čedriĉ ꜩ Last").id # latin special, with latin non-collateable
 
       names_asc = ["1 cedric", "a cedric", "cedric 1", "Cedric 2", "ċedriĉ 3", "čedriĉ 4", "ćedriĉ Last", "čedriĉ คฉ Almost last cedric", "čedriĉ ꜩ Last", "sedric 1", "Sedric 2",  "คฉ Really last"]
-      people = Person.where(:id => ids).all
+      people = Person.where(:id => ids).load
       subject.sort!(people, [:name, true])
       people.map(&:name).should == names_asc
 

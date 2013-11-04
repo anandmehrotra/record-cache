@@ -13,58 +13,58 @@ describe RecordCache::Strategy::IndexCache do
   end
 
   it "should use the id cache to retrieve the actual records" do
-    lambda { @apples = Apple.where(:store_id => 1).all }.should miss_cache(Apple).on(:store_id).times(1)
-    lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
-    lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:id).times(@apples.size)
+    lambda { @apples = Apple.where(:store_id => 1).load }.should miss_cache(Apple).on(:store_id).times(1)
+    lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
+    lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:id).times(@apples.size)
   end
 
   context "logging" do
     before(:each) do
-      Apple.where(:store_id => 1).all
+      Apple.where(:store_id => 1).load
     end
 
     it "should write hit to the debug log" do
-      lambda { Apple.where(:store_id => 1).all }.should log(:debug, /IndexCache hit for rc\/apl\/store_id=1v\d+: found 5 ids/)
+      lambda { Apple.where(:store_id => 1).load }.should log(:debug, /IndexCache hit for rc\/apl\/store_id=1v\d+: found 5 ids/)
     end
 
     it "should write miss to the debug log" do
-      lambda { Apple.where(:store_id => 2).all }.should log(:debug, /IndexCache miss for rc\/apl\/store_id=2v\d+: found no ids/)
+      lambda { Apple.where(:store_id => 2).load }.should log(:debug, /IndexCache miss for rc\/apl\/store_id=2v\d+: found no ids/)
     end
   end
 
   context "cacheable?" do
     before(:each) do
-      @store1_apples = Apple.where(:store_id => 1).all
-      @store2_apples = Apple.where(:store_id => 2).all
+      @store1_apples = Apple.where(:store_id => 1).load
+      @store2_apples = Apple.where(:store_id => 2).load
     end
 
     it "should hit the cache for a single index id" do
-      lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
     end
 
     it "should hit the cache for a single index id with other where clauses" do
-      lambda { Apple.where(:store_id => 1).where(:name => "applegate").all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda { Apple.where(:store_id => 1).where(:name => "applegate").load }.should hit_cache(Apple).on(:store_id).times(1)
     end
 
     it "should hit the cache for a single index id with (simple) sort clauses" do
-      lambda { Apple.where(:store_id => 1).order("name ASC").all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda { Apple.where(:store_id => 1).order("name ASC").load }.should hit_cache(Apple).on(:store_id).times(1)
     end
 
     #Allow limit == 1 by filtering records after cache hit.  Needed for has_one
     it "should not hit the cache for a single index id with limit > 0" do
-      lambda { Apple.where(:store_id => 1).limit(2).all }.should_not hit_cache(Apple).on(:store_id)
+      lambda { Apple.where(:store_id => 1).limit(2).load }.should_not hit_cache(Apple).on(:store_id)
     end
 
     it "should not hit the cache when an :id where clause is defined" do
       # this query should make use of the :id cache, which is faster
-      lambda { Apple.where(:store_id => 1).where(:id => 1).all }.should_not hit_cache(Apple).on(:store_id)
+      lambda { Apple.where(:store_id => 1).where(:id => 1).load }.should_not hit_cache(Apple).on(:store_id)
     end
   end
   
   context "record_change" do
     before(:each) do
-      @store1_apples = Apple.where(:store_id => 1).order('id ASC').all
-      @store2_apples = Apple.where(:store_id => 2).order('id ASC').all
+      @store1_apples = Apple.where(:store_id => 1).order('id ASC').load
+      @store2_apples = Apple.where(:store_id => 2).order('id ASC').load
     end
 
     [false, true].each do |fresh|
@@ -76,14 +76,14 @@ describe RecordCache::Strategy::IndexCache do
         @destroyed.destroy
         # check the cache hit/miss on the index that contained that apple
         if fresh
-          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
         else
-          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should miss_cache(Apple).on(:store_id).times(1)
+          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should miss_cache(Apple).on(:store_id).times(1)
         end
         @apples.size.should == @store1_apples.size - 1
         @apples.map(&:id).should == @store1_apples.map(&:id) - [@destroyed.id]
         # and the index should be cached again
-        lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
       end
 
       it "should #{fresh ? 'update' : 'invalidate'} the index when a record in the index is created and the current index is #{fresh ? '' : 'not '}fresh" do
@@ -93,14 +93,14 @@ describe RecordCache::Strategy::IndexCache do
         @new_apple_in_store1 = Apple.create!(:name => "Fresh Apple", :store_id => 1)
         # check the cache hit/miss on the index that contains that apple
         if fresh
-          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
         else
-          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should miss_cache(Apple).on(:store_id).times(1)
+          lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should miss_cache(Apple).on(:store_id).times(1)
         end
         @apples.size.should == @store1_apples.size + 1
         @apples.map(&:id).should == @store1_apples.map(&:id) + [@new_apple_in_store1.id]
         # and the index should be cached again
-        lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
       end
 
       it "should #{fresh ? 'update' : 'invalidate'} two indexes when the indexed value is updated and the current index is #{fresh ? '' : 'not '}fresh" do
@@ -113,25 +113,25 @@ describe RecordCache::Strategy::IndexCache do
         @apple_moved_from_store1_to_store2.save!
         # check the cache hit/miss on the indexes that contained/contains that apple
         if fresh
-          lambda { @apples1 = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
-          lambda { @apples2 = Apple.where(:store_id => 2).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+          lambda { @apples1 = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
+          lambda { @apples2 = Apple.where(:store_id => 2).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
         else
-          lambda { @apples1 = Apple.where(:store_id => 1).order('id ASC').all }.should miss_cache(Apple).on(:store_id).times(1)
-          lambda { @apples2 = Apple.where(:store_id => 2).order('id ASC').all }.should miss_cache(Apple).on(:store_id).times(1)
+          lambda { @apples1 = Apple.where(:store_id => 1).order('id ASC').load }.should miss_cache(Apple).on(:store_id).times(1)
+          lambda { @apples2 = Apple.where(:store_id => 2).order('id ASC').load }.should miss_cache(Apple).on(:store_id).times(1)
         end
         @apples1.size.should == @store1_apples.size - 1
         @apples2.size.should == @store2_apples.size + 1
         @apples1.map(&:id).should == @store1_apples.map(&:id) - [@apple_moved_from_store1_to_store2.id]
         @apples2.map(&:id).should == [@apple_moved_from_store1_to_store2.id] + @store2_apples.map(&:id)
         # and the index should be cached again
-        lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
-        lambda { Apple.where(:store_id => 2).all }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:store_id => 2).load }.should hit_cache(Apple).on(:store_id).times(1)
       end
 
       it "should #{fresh ? 'update' : 'invalidate'} multiple indexes when several values on different indexed attributes are updated at once and one of the indexes is #{fresh ? '' : 'not '}fresh" do
         # find the apples for person 1 and 5 (Chase)
-        @person4_apples = Apple.where(:person_id => 4).all # Fry's Apples
-        @person5_apples = Apple.where(:person_id => 5).all # Chases' Apples
+        @person4_apples = Apple.where(:person_id => 4).load # Fry's Apples
+        @person5_apples = Apple.where(:person_id => 5).load # Chases' Apples
         # make sure person indexes are no longer fresh
         Apple.record_cache.invalidate(:person_id, 4) unless fresh
         Apple.record_cache.invalidate(:person_id, 5) unless fresh
@@ -141,14 +141,14 @@ describe RecordCache::Strategy::IndexCache do
         @apple_moved_from_s1to2_p5to4.person_id = 4
         @apple_moved_from_s1to2_p5to4.save!
         # check the cache hit/miss on the indexes that contained/contains that apple
-        lambda { @apples_s1 = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
-        lambda { @apples_s2 = Apple.where(:store_id => 2).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { @apples_s1 = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { @apples_s2 = Apple.where(:store_id => 2).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
         if fresh
-          lambda { @apples_p1 = Apple.where(:person_id => 4).order('id ASC').all }.should hit_cache(Apple).on(:person_id).times(1)
-          lambda { @apples_p2 = Apple.where(:person_id => 5).order('id ASC').all }.should hit_cache(Apple).on(:person_id).times(1)
+          lambda { @apples_p1 = Apple.where(:person_id => 4).order('id ASC').load }.should hit_cache(Apple).on(:person_id).times(1)
+          lambda { @apples_p2 = Apple.where(:person_id => 5).order('id ASC').load }.should hit_cache(Apple).on(:person_id).times(1)
         else
-          lambda { @apples_p1 = Apple.where(:person_id => 4).order('id ASC').all }.should miss_cache(Apple).on(:person_id).times(1)
-          lambda { @apples_p2 = Apple.where(:person_id => 5).order('id ASC').all }.should miss_cache(Apple).on(:person_id).times(1)
+          lambda { @apples_p1 = Apple.where(:person_id => 4).order('id ASC').load }.should miss_cache(Apple).on(:person_id).times(1)
+          lambda { @apples_p2 = Apple.where(:person_id => 5).order('id ASC').load }.should miss_cache(Apple).on(:person_id).times(1)
         end
         @apples_s1.size.should == @store1_apples.size - 1
         @apples_s2.size.should == @store2_apples.size + 1
@@ -159,10 +159,10 @@ describe RecordCache::Strategy::IndexCache do
         @apples_p1.map(&:id).should == ([@apple_moved_from_s1to2_p5to4.id] + @person4_apples.map(&:id)).sort
         @apples_p2.map(&:id).should ==  (@person5_apples.map(&:id) - [@apple_moved_from_s1to2_p5to4.id]).sort
         # and the index should be cached again
-        lambda { Apple.where(:store_id => 1).all }.should hit_cache(Apple).on(:store_id).times(1)
-        lambda { Apple.where(:store_id => 2).all }.should hit_cache(Apple).on(:store_id).times(1)
-        lambda { Apple.where(:person_id => 4).all }.should hit_cache(Apple).on(:person_id).times(1)
-        lambda { Apple.where(:person_id => 5).all }.should hit_cache(Apple).on(:person_id).times(1)
+        lambda { Apple.where(:store_id => 1).load }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:store_id => 2).load }.should hit_cache(Apple).on(:store_id).times(1)
+        lambda { Apple.where(:person_id => 4).load }.should hit_cache(Apple).on(:person_id).times(1)
+        lambda { Apple.where(:person_id => 5).load }.should hit_cache(Apple).on(:person_id).times(1)
       end
     end
 
@@ -170,36 +170,36 @@ describe RecordCache::Strategy::IndexCache do
       # destroy an apple of store 2
       @store2_apples.first.destroy
       # index of apples of store 1 are not affected
-      lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
     end
 
     it "should leave the index alone when a record outside the index is created" do
       # create an apple for store 2
       Apple.create!(:name => "Fresh Apple", :store_id => 2)
       # index of apples of store 1 are not affected
-      lambda { @apples = Apple.where(:store_id => 1).order('id ASC').all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda { @apples = Apple.where(:store_id => 1).order('id ASC').load }.should hit_cache(Apple).on(:store_id).times(1)
     end
   end
   
   context "invalidate" do
     before(:each) do
-      @store1_apples = Apple.where(:store_id => 1).all
-      @store2_apples = Apple.where(:store_id => 2).all
-      @address_1 = Address.where(:store_id => 1).all
-      @address_2 = Address.where(:store_id => 2).all
+      @store1_apples = Apple.where(:store_id => 1).load
+      @store2_apples = Apple.where(:store_id => 2).load
+      @address_1 = Address.where(:store_id => 1).load
+      @address_2 = Address.where(:store_id => 2).load
     end
 
     it "should invalidate single index" do
       Apple.record_cache[:store_id].invalidate(1)
-      lambda{ Apple.where(:store_id => 1).all }.should miss_cache(Apple).on(:store_id).times(1)
+      lambda{ Apple.where(:store_id => 1).load }.should miss_cache(Apple).on(:store_id).times(1)
     end
 
     it "should invalidate indexes when using update_all" do
       pending "is there a performant way to invalidate index caches within update_all? only the new value is available, so we should query the old values..." do
         # update 2 apples for index values store 1 and store 2
         Apple.where(:id => [@store1_apples.first.id, @store2_apples.first.id]).update_all(:store_id => 3)
-        lambda{ @apples_1 = Apple.where(:store_id => 1).all }.should miss_cache(Apple).on(:store_id).times(1)
-        lambda{ @apples_2 = Apple.where(:store_id => 2).all }.should miss_cache(Apple).on(:store_id).times(1)
+        lambda{ @apples_1 = Apple.where(:store_id => 1).load }.should miss_cache(Apple).on(:store_id).times(1)
+        lambda{ @apples_2 = Apple.where(:store_id => 2).load }.should miss_cache(Apple).on(:store_id).times(1)
         @apples_1.map(&:id).sort.should == @store1_apples[1..-1].sort
         @apples_2.map(&:id).sort.should == @store2_apples[1..-1].sort
       end
@@ -213,10 +213,10 @@ describe RecordCache::Strategy::IndexCache do
       store1.apple_ids = store2_apple_ids
       store1.save!
       # apples in Store 1 should be all (only) the apples that were in Store 2 (cache invalidated)
-      lambda{ @apples_1 = Apple.where(:store_id => 1).all }.should miss_cache(Apple).on(:store_id).times(1)
+      lambda{ @apples_1 = Apple.where(:store_id => 1).load }.should miss_cache(Apple).on(:store_id).times(1)
       @apples_1.map(&:id).sort.should == store2_apple_ids
       # there are no apples in Store 2 anymore (incremental cache update, as each apples in store 2 was saved separately)
-      lambda{ @apples_2 = Apple.where(:store_id => 2).all }.should hit_cache(Apple).on(:store_id).times(1)
+      lambda{ @apples_2 = Apple.where(:store_id => 2).load }.should hit_cache(Apple).on(:store_id).times(1)
       @apples_2.should == []
     end
 

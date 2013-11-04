@@ -28,7 +28,7 @@ describe RecordCache::Strategy::UniqueIndexCache do
     end
 
     it "should write partial hits to the debug log" do
-      lambda { Person.where(:name => ["Fry", "Chase"]).all }.should log(:debug, %(UniqueIndexCache on 'name' partial hit for ids ["Fry", "Chase"]: missing ["Chase"]))
+      lambda { Person.where(:name => ["Fry", "Chase"]).load }.should log(:debug, %(UniqueIndexCache on 'name' partial hit for ids ["Fry", "Chase"]: missing ["Chase"]))
     end
   end
 
@@ -41,43 +41,43 @@ describe RecordCache::Strategy::UniqueIndexCache do
 
     # @see https://github.com/orslumen/record-cache/issues/2
     it "should not use the cache when a lock is used" do
-      lambda{ Person.lock("any_lock").where(:name => "Fry").all }.should_not hit_cache(Person)
+      lambda{ Person.lock("any_lock").where(:name => "Fry").load }.should_not hit_cache(Person)
     end
 
     it "should use the cache when a single id is requested" do
-      lambda{ Person.where(:name => "Fry").all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").load }.should hit_cache(Person).on(:name).times(1)
     end
 
     it "should use the cache when a multiple ids are requested" do
-      lambda{ Person.where(:name => ["Fry", "Chase"]).all }.should hit_cache(Person).on(:name).times(2)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).load }.should hit_cache(Person).on(:name).times(2)
     end
 
     it "should use the cache when a single id is requested and the limit is 1" do
-      lambda{ Person.where(:name => "Fry").limit(1).all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").limit(1).load }.should hit_cache(Person).on(:name).times(1)
     end
 
     it "should not use the cache when a single id is requested and the limit is > 1" do
-      lambda{ Person.where(:name => "Fry").limit(2).all }.should_not use_cache(Person).on(:name)
+      lambda{ Person.where(:name => "Fry").limit(2).load }.should_not use_cache(Person).on(:name)
     end
 
     it "should not use the cache when multiple ids are requested and the limit is 1" do
-      lambda{ Person.where(:name => ["Fry", "Chase"]).limit(1).all }.should_not use_cache(Person).on(:name)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).limit(1).load }.should_not use_cache(Person).on(:name)
     end
 
     it "should use the cache when a single id is requested together with other where clauses" do
-      lambda{ Person.where(:name => "Fry").where(:height => 1.67).all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").where(:height => 1.67).load }.should hit_cache(Person).on(:name).times(1)
     end
 
     it "should use the cache when a multiple ids are requested together with other where clauses" do
-      lambda{ Person.where(:name => ["Fry", "Chase"]).where(:height => 1.67).all }.should hit_cache(Person).on(:name).times(2)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).where(:height => 1.67).load }.should hit_cache(Person).on(:name).times(2)
     end
 
     it "should use the cache when a single id is requested together with (simple) sort clauses" do
-      lambda{ Person.where(:name => "Fry").order("name ASC").all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").order("name ASC").load }.should hit_cache(Person).on(:name).times(1)
     end
 
     it "should use the cache when a multiple ids are requested together with (simple) sort clauses" do
-      lambda{ Person.where(:name => ["Fry", "Chase"]).order("name ASC").all }.should hit_cache(Person).on(:name).times(2)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).order("name ASC").load }.should hit_cache(Person).on(:name).times(2)
     end
   end
   
@@ -89,12 +89,12 @@ describe RecordCache::Strategy::UniqueIndexCache do
     end
 
     it "should invalidate destroyed records" do
-      lambda{ Person.where(:name => "Fry").all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").load }.should hit_cache(Person).on(:name).times(1)
       @fry.destroy
-      lambda{ @people = Person.where(:name => "Fry").all }.should miss_cache(Person).on(:name).times(1)
+      lambda{ @people = Person.where(:name => "Fry").load }.should miss_cache(Person).on(:name).times(1)
       @people.should == []
       # try again, to make sure the "missing record" is not cached
-      lambda{ Person.where(:name => "Fry").all }.should miss_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => "Fry").load }.should miss_cache(Person).on(:name).times(1)
     end
 
     it "should add updated records directly to the cache" do
@@ -113,7 +113,7 @@ describe RecordCache::Strategy::UniqueIndexCache do
     it "should add updated records to the cache, also when multiple ids are queried" do
       @fry.height = 1.71
       @fry.save!
-      lambda{ @people = Person.where(:name => ["Fry", "Chase"]).order("id ASC").all }.should hit_cache(Person).on(:name).times(2)
+      lambda{ @people = Person.where(:name => ["Fry", "Chase"]).order("id ASC").load }.should hit_cache(Person).on(:name).times(2)
       @people.map(&:height).should == [1.71, 1.91]
     end
     
@@ -133,21 +133,21 @@ describe RecordCache::Strategy::UniqueIndexCache do
     it "should only miss the cache for the invalidated record when multiple ids are queried" do
       # miss on 1
       Person.record_cache[:name].invalidate("Fry")
-      lambda{ Person.where(:name => ["Fry", "Chase"]).all }.should miss_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).load }.should miss_cache(Person).on(:name).times(1)
       # hit on 2
       Person.record_cache[:name].invalidate("Fry")
-      lambda{ Person.where(:name => ["Fry", "Chase"]).all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).load }.should hit_cache(Person).on(:name).times(1)
       # nothing invalidated, both hit
-      lambda{ Person.where(:name => ["Fry", "Chase"]).all }.should hit_cache(Person).on(:name).times(2)
+      lambda{ Person.where(:name => ["Fry", "Chase"]).load }.should hit_cache(Person).on(:name).times(2)
     end
 
     it "should invalidate records when using update_all" do
-      Person.where(:id => ["Fry", "Chase", "Penny"]).all # fill id cache on all Adam Store apples
-      lambda{ @people = Person.where(:name => ["Fry", "Chase", "Penny"]).order("name ASC").all }.should hit_cache(Person).on(:name).times(2)
+      Person.where(:id => ["Fry", "Chase", "Penny"]).load # fill id cache on all Adam Store apples
+      lambda{ @people = Person.where(:name => ["Fry", "Chase", "Penny"]).order("name ASC").load }.should hit_cache(Person).on(:name).times(2)
       @people.map(&:name).should == ["Chase", "Fry", "Penny"]
       # update 2 of the 3 People
       Person.where(:name => ["Fry", "Penny"]).update_all(:height => 1.21)
-      lambda{ @people = Person.where(:name => ["Fry", "Chase", "Penny"]).order("height ASC").all }.should hit_cache(Person).on(:name).times(1)
+      lambda{ @people = Person.where(:name => ["Fry", "Chase", "Penny"]).order("height ASC").load }.should hit_cache(Person).on(:name).times(1)
       @people.map(&:height).should == [1.21, 1.21, 1.91]
     end
 
