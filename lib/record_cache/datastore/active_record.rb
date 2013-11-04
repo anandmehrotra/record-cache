@@ -15,6 +15,6 @@ if ActiveRecord::VERSION::MAJOR == 3 && ActiveRecord::VERSION::MINOR == 1
 	AR_VERSION = 31	
 elsif ActiveRecord::VERSION::MAJOR == 4 && ActiveRecord::VERSION::MINOR == 0
 	AR_VERSION = 40
-
+end
 
 require File.dirname(__FILE__) + "/active_record_#{AR_VERSION}.rb"
