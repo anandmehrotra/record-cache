@@ -47,7 +47,7 @@ module ActiveRecord
       # for the top-of-stack transaction, so the real
       # `commit_transaction_records` method only sends callbacks to those.
       #
-      def commit_transaction_records_with_transactional_fixtures(commit = true)
+      def commit_transaction_with_transactional_fixtures(commit = true)
         unless commit
           real_current_transaction_records = @_current_transaction_records
           @_current_transaction_records = @_current_transaction_records.pop
@@ -65,7 +65,7 @@ module ActiveRecord
           end
         end
       end
-      alias_method_chain :commit_transaction_records, :transactional_fixtures
+      alias_method_chain :commit_transaction, :transactional_fixtures
     end
   end
 end
